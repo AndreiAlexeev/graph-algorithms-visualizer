@@ -1,0 +1,63 @@
+# ===================================
+# Hyperskill Files (DO NOT UPLOAD)
+# ===================================
+.gradle/
+build/
+gradle/
+gradlew
+gradlew.bat
+settings.gradle
+
+# Hyperskill course files
+course-info.yaml
+course-remote-info.yaml
+lesson-info.yaml
+
+# Hyperskill descriptions and other stages
+Description*
+**/Description*
+Click to vertex/
+Connecting the dots/
+Drawing circles/
+Minimum spanning tree/
+Removing vertices & edges/
+The graph traversal algorithm/
+The shortest path algorithm/
+Topics/
+
+# Test files from Hyperskill
+test/
+**/test/
+
+# ===================================
+# IntelliJ IDEA
+# ===================================
+.idea/
+*.iml
+*.iws
+out/
+
+# ===================================
+# Compiled Files
+# ===================================
+*.class
+target/
+*.jar
+*.war
+*.ear
+
+# ===================================
+# OS Specific
+# ===================================
+.DS_Store
+Thumbs.db
+
+# ===================================
+# Logs
+# ===================================
+*.log
+
+# ===================================
+# Keep only our source code
+# ===================================
+# Everything in task/src/visualizer/*.java will be included
