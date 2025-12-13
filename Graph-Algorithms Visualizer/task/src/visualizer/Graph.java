@@ -6,11 +6,20 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Graph extends JPanel {
+
+    public interface VertexSelectionListener{
+        void onVertexSelected(Vertex vertex);
+    }
+
     private static final int EDGE_CLICK_TOLERANCE = 15;
+    private static final int VERTEX_SPACING_MULTIPLIER = 3;
+    private static final Logger LOGGER = Logger.getLogger(Graph.class.getName());
     private final List<Vertex> vertexList = new ArrayList<>();
     private final List<Edge> edgeList = new ArrayList<>();
     private final List<JLabel> labelList = new ArrayList<>();
@@ -20,6 +29,9 @@ public class Graph extends JPanel {
     private Vertex vertexMarkedForDeletion;
     private Edge edgeMarkedForDeletion;
 
+    private transient VertexSelectionListener vertexSelectionListener;//the listeners are temporary
+    private String pendingAlgorithm = null;
+
     public Graph() {
         setName("Graph");
         setLayout(null);
@@ -28,11 +40,11 @@ public class Graph extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
 
-                System.out.println("mouse clicked at " + e.getX() + ", " + e.getY());
-                System.out.println("current mode: " + mode);
+                LOGGER.log(Level.FINEST, "Mouse clicked at ({0}, {1})", new Object[]{e.getX(), e.getY()});
+                LOGGER.log(Level.FINE, "Current mode: {0}", mode);
 
-                if (mode == null){
-                    System.out.println("warning: mode is null!");
+                if (mode == null) {
+                    LOGGER.log(Level.WARNING, "Mode is null! Cannot process click.");
                     return;
                 }
                 switch (mode) {
@@ -54,6 +66,10 @@ public class Graph extends JPanel {
 
                     case NONE:
                         break;
+
+                    case SELECT_START_VERTEX:
+                        selectStartVertex(e);
+                        break;
                 }
             }
         });
@@ -74,22 +90,33 @@ public class Graph extends JPanel {
     //configures behavior
     public void setMode(Mode mode) {
         this.mode = mode;
-        System.out.println("Call setMode");
+        LOGGER.log(Level.FINEST, "Call setMode() method");
     }
 
-    //data access
-    public List<Vertex> getVertexList() {
-        return vertexList;
+    public void setVertexSelectionListener(VertexSelectionListener listener){
+        this.vertexSelectionListener = listener;
     }
 
-    public List<Edge> getEdgeList() {
-        return edgeList;
+    public void setPendingAlgorithm(String algorithmName){
+        this.pendingAlgorithm = algorithmName;
+    }
+
+    public String getPendingAlgorithm(){
+        return pendingAlgorithm;
+    }
+
+    public List<Vertex> getVertexList(){
+        return new ArrayList<>(vertexList);//a copy list
+    }
+
+    public List<Edge> getEdgeList(){
+        return new ArrayList<>(edgeList);//a copy list
     }
 
     //the method that allows the new vertex center
     //validates the placement of vertices
     private boolean isAllowedVertex(int centerNewVertexX, int centerNewVertexY) {
-        int radius = Vertex.getVertexSize() / 2;
+        int radius = Vertex.getDefaultVertexSize() / 2;
 
         //if the peak fits within the panel's limits
         if (centerNewVertexX < radius || centerNewVertexX > getWidth() - radius) {
@@ -99,7 +126,7 @@ public class Graph extends JPanel {
             return false;
         }
 
-        int minDistBetweenCentersVertices = radius * 3;
+        int minDistBetweenCentersVertices = radius * VERTEX_SPACING_MULTIPLIER;
         int threshold = minDistBetweenCentersVertices * minDistBetweenCentersVertices;
 
         //check the new point against all existing vertices
@@ -119,7 +146,7 @@ public class Graph extends JPanel {
         int yCoordinate = event.getY();
 
         Vertex clickedVertex = findVertexAtPosition(xCoordinate, yCoordinate);
-        if (clickedVertex != null){
+        if (clickedVertex != null) {
             return;
         }
 
@@ -136,31 +163,34 @@ public class Graph extends JPanel {
             }
         }
 
-        Vertex newVertex = new Vertex(xCoordinate, yCoordinate, 50, nameVertex);
+        Vertex newVertex = new Vertex(xCoordinate, yCoordinate, nameVertex);
 
         if (isAllowedVertex(xCoordinate, yCoordinate)) {
             //add a vertex if ...
             vertexList.add(newVertex);//add in list
             add(newVertex);//add in panel for visualization
-            System.out.println("added " + newVertex.getBounds());//for verification
+            LOGGER.log(Level.FINEST, "Added a new vertex at: {0}", newVertex.getBounds());
             revalidate();
             repaint();
         } else {
-            System.out.println("Is too close to another vertex or is outside the panel");
+            LOGGER.log(Level.WARNING, "Is too close to another vertex or is outside the panel!");
         }
+    }
+
+    private void selectFirstVertex(Vertex clickedVertex) {
+        this.firstSelectedVertex = clickedVertex;
+        clickedVertex.setVertexSelected(true);
+//            DialogBox.showMessage(Graph.this, "You have selected first Vertex");
     }
 
     //manage edge addition
     public void addEdge(MouseEvent event) {
-        System.out.println("addEdge called");
-        System.out.println("current mode in Graph: " + this.mode);
-        System.out.println(" firstSelectedVertex: " + firstSelectedVertex);
 
-        //get the coordinates where I clicked
-        int clickX = event.getX();
-        int clickY = event.getY();
+        LOGGER.log(Level.FINE, "addEdge() called - mode: {0}, firstVertex: {1}",
+                new Object[]{this.mode, firstSelectedVertex});
 
-        Vertex clickedVertex = findVertexAtPosition(clickX, clickY);
+        Vertex clickedVertex =
+                findVertexAtPosition(event.getX(), event.getY());//get the coordinates where I clicked
 
         if (clickedVertex == null) {
 //            DialogBox.showMessage(Graph.this, "Select a vertex");
@@ -193,8 +223,8 @@ public class Graph extends JPanel {
             }
 
             for (Edge edge : edgeList) {
-                if ((edge.fromVertex1.equals(firstSelectedVertex) &&
-                        edge.toVertex2.equals(secondSelectedVertex))) {
+                if ((edge.fromVertex.equals(firstSelectedVertex) &&
+                        edge.toVertex.equals(secondSelectedVertex))) {
 //                    DialogBox.showMessage(Graph.this, "Edge already exists!");
 
                     //reset selected vertexes
@@ -209,13 +239,12 @@ public class Graph extends JPanel {
             Edge edgeRetur = new Edge(secondSelectedVertex, firstSelectedVertex, weight);
 
             JLabel labelTur = edgeTur.createEdgeLabel();//
-//            JLabel labelRetur = edgeRetur.createEdgeLabel();//
 
             //add in lists
             edgeList.add(edgeTur);
             edgeList.add(edgeRetur);
             labelList.add(labelTur);
-//            labelList.add(labelRetur);
+
             //add in panel
             add(edgeTur);
             add(edgeRetur);
@@ -223,7 +252,6 @@ public class Graph extends JPanel {
 //            add(labelRetur);//
 
             setComponentZOrder(labelTur, 0);
-//            setComponentZOrder(labelRetur, 1);
 
             revalidate();
             repaint();
@@ -279,7 +307,7 @@ public class Graph extends JPanel {
             this.secondSelectedVertex = null;
         }
 
-        System.out.println("Resetare completa");
+        LOGGER.log(Level.FINEST, "Complete reset.");
     }
 
     //manage vertex deletion
@@ -302,35 +330,36 @@ public class Graph extends JPanel {
 //                vertexMarkedForDeletion.getName());
 
 //        if (response) {
-            Iterator<Vertex> vertexIterator = vertexList.iterator();
-            while (vertexIterator.hasNext()) {
+        Iterator<Vertex> vertexIterator = vertexList.iterator();
+        while (vertexIterator.hasNext()) {
 
-                Vertex currentVertex = vertexIterator.next();
+            Vertex currentVertex = vertexIterator.next();
 
-                if (currentVertex.equals(vertexMarkedForDeletion)) {//*
-                    vertexIterator.remove();//remove from the list
-                    remove(currentVertex);//remove from the panel
-                    System.out.println("You have successfully deleted the " +
-                            currentVertex.getBounds());//for verification
-                    break;
-                }
+            if (currentVertex.equals(vertexMarkedForDeletion)) {//*
+                vertexIterator.remove();//remove from the list
+                remove(currentVertex);//remove from the panel
+
+                LOGGER.log(Level.INFO, "You have successfully deleted the {0}",
+                        currentVertex.getBounds());
+                break;
             }
+        }
 
-            Iterator<Edge> edgeIterator = edgeList.iterator();
-            while(edgeIterator.hasNext()){
-                Edge currentEdge = edgeIterator.next();
+        Iterator<Edge> edgeIterator = edgeList.iterator();
+        while (edgeIterator.hasNext()) {
+            Edge currentEdge = edgeIterator.next();
 
-                if (currentEdge.fromVertex1 == vertexMarkedForDeletion ||
-                        currentEdge.toVertex2 == vertexMarkedForDeletion){
-                    remove(currentEdge);//remove from panel
+            if (currentEdge.fromVertex == vertexMarkedForDeletion ||
+                    currentEdge.toVertex == vertexMarkedForDeletion) {
+                remove(currentEdge);//remove from panel
 
-                    deleteLabelForEdge(currentEdge.fromVertex1, currentEdge.toVertex2);
+                deleteLabelForEdge(currentEdge.fromVertex, currentEdge.toVertex);
 
-                    edgeIterator.remove();//remove from th list
-                }
+                edgeIterator.remove();//remove from th list
             }
-            revalidate();
-            repaint();
+        }
+        revalidate();
+        repaint();
 //        } else {
 //            clickedVertex.setVertexSelected(false);
 //            vertexMarkedForDeletion = null;
@@ -382,23 +411,25 @@ public class Graph extends JPanel {
 
     //determine which edge was clicked
     private Edge findEdgeAtPosition(int clickX, int clickY) {
-        System.out.println("findEdgeAtPosition called");
-        System.out.println("click coords: " + clickX + ", " + clickY);
-        System.out.println("edgeListe size " + edgeList.size());
+
+        LOGGER.log(Level.FINER, "Searching edge at ({0}, {1}), total edges: {2}",
+                new Object[]{clickX, clickY, edgeList.size()});
 
         for (Edge edge : edgeList) {
-            System.out.println("testing edge " + edge.getName());
-            System.out.println("edge coords " + edge.startX + ", " + edge.startY);
+
+            LOGGER.log(Level.FINEST, "Testing edge {0}", edge.getName());
+
             if (isNearEdge(clickX, clickY,
                     edge.startX, edge.startY,
                     edge.endX, edge.endY)) {
-                System.out.println("found edge!");
+
+                LOGGER.log(Level.FINE, "Found edge {0} ", edge.getName());//*
                 return edge;
-            } else {
-                System.out.println("not near this edge");
-            }
+            }/* else {
+                LOGGER.log(Level.INFO, "Not near this edge");
+            }*/
         }
-        System.out.println("no edge found");
+        LOGGER.log(Level.FINE, "No edge found at click position");//*
         return null;
     }
 
@@ -408,14 +439,14 @@ public class Graph extends JPanel {
         if (edgeMarkedForDeletion != null) {
             this.edgeMarkedForDeletion.setEdgeSelected(false);
             this.edgeMarkedForDeletion = null;
-            System.out.println("Resetare Edge completa");
+            LOGGER.log(Level.FINEST, "Edge selection reset complete");
         }
     }
 
     private Edge findInverseEdge(Edge originalEdge) {
         for (Edge edge : edgeList) {
-            if (originalEdge.fromVertex1 == edge.toVertex2 &&
-                    originalEdge.toVertex2 == edge.fromVertex1) {
+            if (originalEdge.fromVertex == edge.toVertex &&
+                    originalEdge.toVertex == edge.fromVertex) {
                 return edge;
             }
         }
@@ -441,24 +472,24 @@ public class Graph extends JPanel {
 //                edgeMarkedForDeletion.getName());
 
 //        if (edgeResponse) {
-            Edge inverseEdge = findInverseEdge(clickedEdge);
+        Edge inverseEdge = findInverseEdge(clickedEdge);
 
-            edgeList.remove(clickedEdge);//remove from the list
-            if (inverseEdge != null) {
-                edgeList.remove(inverseEdge);
-            }
+        edgeList.remove(clickedEdge);//remove from the list
+        if (inverseEdge != null) {
+            edgeList.remove(inverseEdge);
+        }
 
-            remove(clickedEdge);//remove from the panel
-            if (inverseEdge != null) {
-                remove(inverseEdge);
-            }
+        remove(clickedEdge);//remove from the panel
+        if (inverseEdge != null) {
+            remove(inverseEdge);
+        }
 
-            deleteLabelForEdge(clickedEdge.fromVertex1, clickedEdge.toVertex2);
-            deleteLabelForEdge(clickedEdge.toVertex2, clickedEdge.fromVertex1);
+        deleteLabelForEdge(clickedEdge.fromVertex, clickedEdge.toVertex);
+        deleteLabelForEdge(clickedEdge.toVertex, clickedEdge.fromVertex);
 
-            revalidate();
-            repaint();
-            edgeMarkedForDeletion = null;
+        revalidate();
+        repaint();
+        edgeMarkedForDeletion = null;
 //        }else {
 //            resetSelectedEdge();
 //        }
@@ -470,7 +501,8 @@ public class Graph extends JPanel {
         for (JLabel label : labelList) {
             Pattern pattern = Pattern.compile(
                     "EdgeLabel <" + firstVertexID.getVertexId() +
-                            " -> " + secondVertexID.getVertexId() + ">");
+                            " -> " + secondVertexID.getVertexId() +
+                            ">");
             Matcher matcher = pattern.matcher(label.getName());
             boolean matchFound = matcher.find();
             if (matchFound) {
@@ -485,7 +517,7 @@ public class Graph extends JPanel {
         }
     }
 
-    public void resetGraph(){
+    public void resetGraph() {
         removeAll();
         vertexList.clear();
         edgeList.clear();
@@ -498,25 +530,46 @@ public class Graph extends JPanel {
         repaint();
     }
 
-    public void resetAllSelections(){
-        if (firstSelectedVertex != null){
+    public void resetAllSelections() {
+        if (firstSelectedVertex != null) {
             firstSelectedVertex.setVertexSelected(false);
             firstSelectedVertex = null;
         }
 
-        if (secondSelectedVertex != null){
-            secondSelectedVertex. setVertexSelected(false);
+        if (secondSelectedVertex != null) {
+            secondSelectedVertex.setVertexSelected(false);
             secondSelectedVertex = null;
         }
 
-        if (vertexMarkedForDeletion != null){
+        if (vertexMarkedForDeletion != null) {
             vertexMarkedForDeletion.setVertexSelected(false);
             vertexMarkedForDeletion = null;
         }
 
-        if (edgeMarkedForDeletion != null){
+        if (edgeMarkedForDeletion != null) {
             edgeMarkedForDeletion.setEdgeSelected(false);
             edgeMarkedForDeletion = null;
         }
+    }
+
+    private void selectStartVertex(MouseEvent event){
+        int clickX = event.getX();
+        int clickY = event.getY();
+
+        Vertex clickedVertex = findVertexAtPosition(clickX, clickY);
+
+        if(clickedVertex == null){
+            DialogBox.showMessage(Graph.this, "Select a vertex");
+            return;
+        }
+
+        System.out.println("Selected start vertex: " + clickedVertex.getName());
+
+        //notify the listener if there is
+        if(vertexSelectionListener != null && pendingAlgorithm != null){
+            vertexSelectionListener.onVertexSelected(clickedVertex);
+        }
+
+//        pendingAlgorithm = null;//reset pending algorithm
     }
 }

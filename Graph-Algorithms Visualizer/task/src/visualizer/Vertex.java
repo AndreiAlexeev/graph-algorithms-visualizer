@@ -4,20 +4,18 @@ import javax.swing.*;
 import java.awt.*;
 
 public class Vertex extends JPanel {
-    static int vertexSize;
-    static int vertexCounter = 0;
+    private static final int DEFAULT_VERTEX_SIZE = 50;
     int xVertex;
     int yVertex;
     boolean isVertexSelected;
 
-    public Vertex(int x, int y, int vertexSize, String strValue) {
-        this.xVertex = x - vertexSize / 2;
-        this.yVertex = y - vertexSize / 2;
+    public Vertex(int x, int y, String strValue) {
+        this.xVertex = x - DEFAULT_VERTEX_SIZE / 2;
+        this.yVertex = y - DEFAULT_VERTEX_SIZE / 2;
 
-        Vertex.setVertexSize(vertexSize);
         setName("Vertex " + strValue);
-        setBounds(xVertex, yVertex, vertexSize, vertexSize);
-        setPreferredSize(new Dimension(vertexSize, vertexSize));
+        setBounds(xVertex, yVertex, DEFAULT_VERTEX_SIZE, DEFAULT_VERTEX_SIZE);
+        setPreferredSize(new Dimension(DEFAULT_VERTEX_SIZE, DEFAULT_VERTEX_SIZE));
         setVisible(true);
         setOpaque(false);
 
@@ -30,15 +28,10 @@ public class Vertex extends JPanel {
         jLabel.setVerticalAlignment(SwingConstants.CENTER);
         add(jLabel, BorderLayout.CENTER);
 
-        vertexCounter++;
     }
 
-    public static int getVertexSize() {
-        return vertexSize;
-    }
-
-    public static void setVertexSize(int vertexSize) {
-        Vertex.vertexSize = vertexSize;
+    public static int getDefaultVertexSize() {
+        return DEFAULT_VERTEX_SIZE;
     }
 
     public String getVertexId() {

@@ -2,8 +2,6 @@ package visualizer;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class DialogBox {
     private DialogBox() {
@@ -52,7 +50,7 @@ public class DialogBox {
             }
 
             try {
-                int weight = Integer.parseInt(nameNewEdge);
+//                int weight = Integer.parseInt(nameNewEdge);
                 return nameNewEdge;
 
 //                if (weight > 0) {
@@ -85,12 +83,7 @@ public class DialogBox {
         dialog.setLocationRelativeTo(component);
 
 
-        Timer timer = new Timer(1500, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                dialog.dispose();
-            }
-        });
+        Timer timer = new Timer(1500, e -> dialog.dispose());
         timer.setRepeats(false);
         timer.start();
         dialog.setVisible(true);

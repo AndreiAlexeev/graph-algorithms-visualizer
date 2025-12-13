@@ -4,36 +4,44 @@ import javax.swing.*;
 import java.awt.*;
 
 public class Edge extends JComponent {
-    Vertex fromVertex1;
-    Vertex toVertex2;
-    int edgeWeight;
+    private static final int LABEL_MIN_WIDTH = 75;
+    private static final int LABEL_MIN_HEIGHT = 25;
+    private static final int LABEL_FONT_SIZE = 25;
+    private static final int SECTION_INSET = 3;
+    private static final int SELECTION_BORDER_RADIUS = 3;
+    final Vertex fromVertex;
+    final Vertex toVertex;
+    final int startX;
+    final int startY;
+    final int endX;
+    final int endY;
 
-    int startX;
-    int startY;
-    int endX;
-    int endY;
+    public int getEdgeWeight() {
+        return edgeWeight;
+    }
 
-    boolean isEdgeSelected;
+    private final int edgeWeight;
+    private boolean isEdgeSelected;
 
     public Edge(Vertex startVertex, Vertex endVertex, int edgeWeight) {
-        this.fromVertex1 = startVertex;
-        this.toVertex2 = endVertex;
+        this.fromVertex = startVertex;
+        this.toVertex = endVertex;
         this.edgeWeight = edgeWeight;
 
         //extracte vertex ID
-        String firstVertexID = fromVertex1.getVertexId();
-        String secondVertexID = toVertex2.getVertexId();
+        String firstVertexID = fromVertex.getVertexId();
+        String secondVertexID = toVertex.getVertexId();
 
         //absolute calculation in the Graph
-        startX = fromVertex1.getX() + fromVertex1.getWidth() / 2;
-        startY = fromVertex1.getY() + fromVertex1.getHeight() / 2;
-        endX = toVertex2.getX() + toVertex2.getWidth() / 2;
-        endY = toVertex2.getY() + toVertex2.getHeight() / 2;
+        startX = fromVertex.getX() + fromVertex.getWidth() / 2;
+        startY = fromVertex.getY() + fromVertex.getHeight() / 2;
+        endX = toVertex.getX() + toVertex.getWidth() / 2;
+        endY = toVertex.getY() + toVertex.getHeight() / 2;
 
         int x = Math.min(startX, endX);
         int y = Math.min(startY, endY);
-        int width = Math.max(Math.abs(endX - startX), 75);//for a text
-        int height = Math.max(Math.abs(endY - startY), 25);//font size
+        int width = Math.max(Math.abs(endX - startX), LABEL_MIN_WIDTH);//for a text
+        int height = Math.max(Math.abs(endY - startY), LABEL_MIN_HEIGHT);//font size
 
         this.setBounds(x, y, width, height);
         this.setName("Edge <" + firstVertexID + " -> " + secondVertexID + ">");
@@ -56,7 +64,7 @@ public class Edge extends JComponent {
 
         GraphicsUtils.doDrawing(graphics2D);
         graphics2D.setColor(Color.white);
-        graphics2D.setFont(new Font("EB Garamond", Font.PLAIN, 25));
+        graphics2D.setFont(new Font("EB Garamond", Font.PLAIN, LABEL_FONT_SIZE));
         //relative coordinates (relative to Edge)
         int relativeStartX = startX - this.getX();
         int relativeStartY = startY - this.getY();
@@ -66,14 +74,13 @@ public class Edge extends JComponent {
         //complexity for selected edges
         if (isEdgeSelected) {
             graphics2D.setColor(Color.RED);
-            int inset = 3;
 
-            int minX = Math.min(relativeStartX, relativeEndX) - inset;
-            int minY = Math.min(relativeStartY, relativeEndY) - inset;
-            int width = Math.abs(relativeEndX - relativeStartX) + 2 * inset;
-            int height = Math.abs(relativeEndY - relativeStartY) + 2 * inset;
+            int minX = Math.min(relativeStartX, relativeEndX) - SECTION_INSET;
+            int minY = Math.min(relativeStartY, relativeEndY) - SECTION_INSET;
+            int width = Math.abs(relativeEndX - relativeStartX) + 2 * SECTION_INSET;
+            int height = Math.abs(relativeEndY - relativeStartY) + 2 * SECTION_INSET;
 
-            graphics2D.drawRoundRect(minX, minY, width, height, 3, 3);
+            graphics2D.drawRoundRect(minX, minY, width, height, SELECTION_BORDER_RADIUS, SELECTION_BORDER_RADIUS);
         }
 
         graphics2D.drawLine(relativeStartX, relativeStartY, relativeEndX, relativeEndY);
@@ -81,13 +88,13 @@ public class Edge extends JComponent {
 
     //method for create label on edge
     public JLabel createEdgeLabel() {
-        String firstVertexID = fromVertex1.getVertexId();
-        String secondVertexID = toVertex2.getVertexId();
+        String firstVertexID = fromVertex.getVertexId();
+        String secondVertexID = toVertex.getVertexId();
 
         JLabel edgeLabel = new JLabel(String.valueOf(edgeWeight));
         edgeLabel.setName("EdgeLabel <" + firstVertexID + " -> " + secondVertexID + ">");
 
-        edgeLabel.setFont(new Font("EB Garamond", Font.PLAIN, 25));
+        edgeLabel.setFont(new Font("EB Garamond", Font.PLAIN, LABEL_FONT_SIZE));
         edgeLabel.setForeground(Color.WHITE);
         edgeLabel.setOpaque(true);
         edgeLabel.setBackground(Color.DARK_GRAY.darker());
@@ -105,5 +112,4 @@ public class Edge extends JComponent {
 
         return edgeLabel;
     }
-
 }

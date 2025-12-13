@@ -16,6 +16,11 @@ public class AppMenuBar extends JMenuBar {
     JMenuItem itemNew;
     JMenuItem itemExit;
 
+    JMenu jAlgorithmsMenu;
+    JMenuItem itemDFS;
+    JMenuItem itemBFS;
+    JMenuItem itemDijkstra;
+
     public AppMenuBar() {
         super();
         initMenuBar();
@@ -70,6 +75,24 @@ public class AppMenuBar extends JMenuBar {
         itemNone.setName("None");
         jModeMenu.add(itemNone);
 
+        //Algorithms menu
+        jAlgorithmsMenu = new JMenu("Algorithms");
+        jAlgorithmsMenu.setName("MenuAlgorithms");
+        jAlgorithmsMenu.setMnemonic(KeyEvent.VK_A);
+        jAlgorithmsMenu.getAccessibleContext()
+                .setAccessibleDescription("This algorithms menu has menu items");
+        this.add(jAlgorithmsMenu);
 
+        itemDFS = new JMenuItem("Depth-First Search");
+        itemDFS.setName("Depth-First Search");
+        jAlgorithmsMenu.add(itemDFS);
+
+        itemBFS = new JMenuItem("Breadth-First Search");
+        itemBFS.setName("Breadth-First Search");
+        jAlgorithmsMenu.add(itemBFS);
+
+        itemDijkstra = new JMenuItem("Dijkstra's Algorithm");
+        itemDijkstra.setName("Dijkstra's Algorithm");
+        jAlgorithmsMenu.add(itemDijkstra);
     }
 }

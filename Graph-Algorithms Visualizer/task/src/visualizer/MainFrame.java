@@ -2,53 +2,47 @@ package visualizer;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainFrame extends JFrame {
 
-    Graph graph = new Graph();
-    JLabel jLabelMode;
-    Mode mode;
-    AppMenuBar appMenuBar = new AppMenuBar();
+    private static final int LABEL_MARGIN = 15;
+    private static final int GRAPH_WIDTH = 800;
+    private static final int GRAPH_HEIGHT = 600;
+    private final Graph graph = new Graph();
+    private final AppMenuBar appMenuBar = new AppMenuBar();
+    private JLabel jLabelMode;
 
+    private JLabel algorithmStatusLabel;
 
     public MainFrame() {
         initUI();//what she has seen
         initMenuAction();//what she does
+        setupGraphListener();
     }
 
     private void initUI() {
-        int panelWidth = 800;
-        int panelHeight = 600;
 
         graph.setLayout(null);
-        graph.setPreferredSize(new Dimension(panelWidth, panelHeight));
+        graph.setPreferredSize(new Dimension(GRAPH_WIDTH, GRAPH_HEIGHT));
         graph.setBackground(Color.DARK_GRAY.darker());
-        ComponentListener componentListener = new ComponentListener() {
+
+        ComponentAdapter componentAdapter = new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                positionLabel();
+                positionModeLabel();
+                if (algorithmStatusLabel.isVisible()) {//only positions it on the surface if the variable is visible
+                    positionDisplayLabel();
+                }
             }
-
-            @Override
-            public void componentMoved(ComponentEvent e) {
-                // TODO document why this method is empty
-            }
-
-            @Override
-            public void componentShown(ComponentEvent e) {
-                // TODO document why this method is empty
-            }
-
-            @Override
-            public void componentHidden(ComponentEvent e) {
-                // TODO document why this method is empty
-            }
-
         };
-        graph.addComponentListener(componentListener);
 
+        graph.addComponentListener(componentAdapter);
+
+        //Mode label
         jLabelMode = new JLabel();
         jLabelMode.setName("Mode");
         jLabelMode.setText("Current mode -> Add a Vertex");
@@ -56,11 +50,22 @@ public class MainFrame extends JFrame {
         jLabelMode.setForeground(Color.WHITE);
         jLabelMode.setOpaque(false);
 
+        //algoritm status label
+        algorithmStatusLabel = new JLabel();
+        algorithmStatusLabel.setName("Display");
+        algorithmStatusLabel.setText("");
+        algorithmStatusLabel.setFont(new Font("EB Garamond", Font.BOLD, 14));
+        algorithmStatusLabel.setForeground(Color.WHITE);
+        algorithmStatusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        algorithmStatusLabel.setOpaque(false);
+        algorithmStatusLabel.setVisible(false);
+
         setLayout(null);
-        graph.setBounds(0, 0, panelWidth, panelHeight);
-        add(graph);
+        graph.setBounds(0, 0, GRAPH_WIDTH, GRAPH_HEIGHT);
+        add(algorithmStatusLabel);
         add(jLabelMode);
-        setSize(panelWidth, panelHeight);
+        add(graph);
+        setSize(GRAPH_WIDTH, GRAPH_HEIGHT + 55);
 
         setTitle("Graph-Algorithms Visualizer");
         setLocationRelativeTo(null);
@@ -68,45 +73,149 @@ public class MainFrame extends JFrame {
         setJMenuBar(appMenuBar);
 
         setVisible(true);
-        SwingUtilities.invokeLater(() -> positionLabel());
+        SwingUtilities.invokeLater(this::positionModeLabel);
         updateMode(Mode.ADD_VERTEX);
     }
 
     private void updateMode(Mode currentMode) {
-        this.mode = currentMode;
         jLabelMode.setText("Current mode -> " + currentMode.getDisplayName());
-        positionLabel();
+        positionModeLabel();
         graph.setMode(currentMode);
         graph.resetAllSelections();
     }
 
     public void initMenuAction() {
-        this.appMenuBar.itemVertex.addActionListener(e -> updateMode(Mode.ADD_VERTEX));
+        this.appMenuBar
+                .itemVertex
+                .addActionListener(e -> updateMode(Mode.ADD_VERTEX));
 
-        this.appMenuBar.itemEdge.addActionListener(e -> updateMode(Mode.ADD_EDGE));
+        this.appMenuBar
+                .itemEdge
+                .addActionListener(e -> updateMode(Mode.ADD_EDGE));
 
-        this.appMenuBar.itemRemoveAVertex.addActionListener(e -> updateMode(Mode.REMOVE_A_VERTEX));
+        this.appMenuBar
+                .itemRemoveAVertex
+                .addActionListener(e -> updateMode(Mode.REMOVE_A_VERTEX));
 
-        this.appMenuBar.itemRemoveAnEdge.addActionListener(e -> updateMode(Mode.REMOVE_AN_EDGE));
+        this.appMenuBar
+                .itemRemoveAnEdge
+                .addActionListener(e -> updateMode(Mode.REMOVE_AN_EDGE));
 
-        this.appMenuBar.itemNone.addActionListener(e -> updateMode(Mode.NONE));
+        this.appMenuBar
+                .itemNone
+                .addActionListener(e -> updateMode(Mode.NONE));
 
-        this.appMenuBar.itemNew.addActionListener(e -> graph.resetGraph());
+        this.appMenuBar
+                .itemNew
+                .addActionListener(e -> {
+                    graph.resetGraph();
+                    algorithmStatusLabel.setVisible(false);
+                });
 
-        this.appMenuBar.itemExit.addActionListener(e -> closeApp());
+        this.appMenuBar
+                .itemExit
+                .addActionListener(e -> closeApp());
+        //new items in stage 5/7
+        this.appMenuBar
+                .itemDFS
+                .addActionListener(e -> {
+                    updateMode(Mode.SELECT_START_VERTEX);
+                    graph.setPendingAlgorithm("DFS");
+                    algorithmStatusLabel.setText("Please choose a starting vertex!");
+                    algorithmStatusLabel.setVisible(true);
+                    positionDisplayLabel();
+
+
+                    System.out.println("Label text: " + algorithmStatusLabel.getText());
+                    System.out.println("Label visible: " + algorithmStatusLabel.isVisible());
+                    System.out.println("Label bounds: " + algorithmStatusLabel.getBounds());
+                });
+
+        this.appMenuBar
+                .itemBFS
+                .addActionListener(e -> {
+                    updateMode(Mode.SELECT_START_VERTEX);
+                    graph.setPendingAlgorithm("BFS");
+                    algorithmStatusLabel.setText("Please choose a starting vertex!");
+                    algorithmStatusLabel.setVisible(true);
+                    positionDisplayLabel();
+
+                });
     }
 
-    private void positionLabel() {
-        int x;
-        int y;
-        int margin = 15;
+    private void positionModeLabel() {
         jLabelMode.setSize(jLabelMode.getPreferredSize());
-        x = graph.getWidth() - jLabelMode.getWidth() - margin;
-        y = margin;
+        int x = graph.getWidth() - jLabelMode.getWidth() - LABEL_MARGIN;
+        int y = LABEL_MARGIN;
         jLabelMode.setLocation(x, y);
     }
 
-    private void closeApp(){
-        System.exit(0);
+    private void positionDisplayLabel() {
+        algorithmStatusLabel.setSize(algorithmStatusLabel.getPreferredSize());
+        int x = (graph.getWidth() - algorithmStatusLabel.getWidth()) / 2;
+        int y = graph.getHeight() - algorithmStatusLabel.getHeight() - LABEL_MARGIN;
+        System.out.println("graph.getHeight() = " + graph.getHeight());
+        System.out.println("label height = " + algorithmStatusLabel.getHeight());
+        System.out.println("Calculated y = " + y);
+        algorithmStatusLabel.setLocation(x, y);
+    }
+
+    private void executeAlgorithm(Vertex startVertex) {
+        System.out.println("executeAlgorithm called with: " + startVertex.getName());
+        String selectedAlgorithm = graph.getPendingAlgorithm();
+
+        if (selectedAlgorithm == null) {
+            System.out.println("Algorithm is null, returning!");
+            return;
+        }
+
+        updateMode(Mode.NONE);
+        algorithmStatusLabel.setText("Please wait...");
+        System.out.println("Set label to Please wait!");
+        algorithmStatusLabel.repaint();
+
+
+        Timer timer = new Timer(1000, e -> {
+            List<Vertex> vertices = graph.getVertexList();
+            List<Edge> edges = graph.getEdgeList();
+            List<String> result;
+
+
+            if (selectedAlgorithm.equals("DFS")) {
+                result = GraphAlgorithms.depthFirstSearch(startVertex, vertices, edges);
+            } else if (selectedAlgorithm.equals("BFS")) {
+                result = GraphAlgorithms.breadthFirstSearch(startVertex, vertices, edges);
+            } else {
+                throw new IllegalStateException("Unknow algorithm: " + selectedAlgorithm);
+            }
+
+            StringBuilder output = new StringBuilder(selectedAlgorithm + " : ");
+            boolean first = true;
+            for (String s : result) {
+                if (!first) {
+                    output.append(" -> ");
+                }
+                output.append(s);
+                first = false;
+            }
+            algorithmStatusLabel.setText(String.valueOf(output));
+            positionDisplayLabel();
+            System.out.println("Final result: " + output);
+            System.out.println("Label visible after: " + algorithmStatusLabel.isVisible());
+            algorithmStatusLabel.repaint();
+            repaint();
+        });
+
+        timer.setRepeats(false);
+        timer.start();
+    }
+
+    private void setupGraphListener() {
+        graph.setVertexSelectionListener(vertex ->
+                executeAlgorithm(vertex));
+    }
+
+    private void closeApp() {
+//        System.exit(0);
     }
 }

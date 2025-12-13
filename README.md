@@ -12,7 +12,7 @@ A Java Swing application for visualizing graph data structures and algorithms.
 
 ## Technologies
 - Java
-- Sing GUI
+- Swing GUI
 
 ## Status
 Currently, implementing vertex and edge removal functionality (Stage 4 of development).

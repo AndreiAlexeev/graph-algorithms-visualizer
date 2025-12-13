@@ -5,7 +5,8 @@ public enum Mode {
     ADD_EDGE("Add an Edge"),
     REMOVE_A_VERTEX("Remove a Vertex"),
     REMOVE_AN_EDGE("Remove an Edge"),
-    NONE("None");
+    NONE("None"),
+    SELECT_START_VERTEX("Select start vertex");
 
     private final String displayName;
 
@@ -17,4 +18,3 @@ public enum Mode {
         return displayName;
     }
 }
-
