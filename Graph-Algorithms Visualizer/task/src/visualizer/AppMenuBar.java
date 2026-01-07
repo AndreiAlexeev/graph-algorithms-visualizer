@@ -20,6 +20,7 @@ public class AppMenuBar extends JMenuBar {
     JMenuItem itemDFS;
     JMenuItem itemBFS;
     JMenuItem itemDijkstra;
+    JMenuItem itemPrims;
 
     public AppMenuBar() {
         super();
@@ -94,5 +95,9 @@ public class AppMenuBar extends JMenuBar {
         itemDijkstra = new JMenuItem("Dijkstra's Algorithm");
         itemDijkstra.setName("Dijkstra's Algorithm");
         jAlgorithmsMenu.add(itemDijkstra);
+
+        itemPrims = new JMenuItem("Prim's Algorithm");
+        itemPrims.setName("Prim's Algorithm");
+        jAlgorithmsMenu.add(itemPrims);
     }
 }

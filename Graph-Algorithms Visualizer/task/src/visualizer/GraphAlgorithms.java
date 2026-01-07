@@ -8,35 +8,33 @@ public class GraphAlgorithms {
         throw new IllegalStateException("Utility class");
     }
 
-    public static List<String> depthFirstSearch(Vertex startVertex,
-                                                List<Vertex> vertexList,
-                                                List<Edge> edgeList) {
+    public static List<String> depthFirstSearch(Vertex startVertex, List<Vertex> vertexList, List<Edge> edgeList) {
         System.out.println("DFS started with: " + startVertex.getVertexId());
 
         Map<Vertex, List<Edge>> map = (buildAdjacencyMap(vertexList, edgeList));//vertex-uri si listele de muchii al
-        //fiecÄƒrui vertex.
+        //fiecărui vertex.
 
-        Stack<Vertex> orderVisitedVertices = new Stack<>();//Stack(lifo) - pentru adÃ¢ncime.
+        Stack<Vertex> orderVisitedVertices = new Stack<>();//Stack(lifo) - pentru adâncime.
         orderVisitedVertices.push(startVertex);
 
         Set<Vertex> listVisitedVertices = new HashSet<>();//Set - ajuta sa prevenim duplicatele.
         listVisitedVertices.add(startVertex);
 
-        List<String> resultList = new ArrayList<>();//adaugÄƒm vertex-uri in lista cind sunt scoase din Stack.
+        List<String> resultList = new ArrayList<>();//adaugăm vertex-uri in lista când sunt scoase din Stack.
 
         while (!orderVisitedVertices.isEmpty()) {
 
             Vertex currentVertex = orderVisitedVertices.pop();
-            resultList.add(currentVertex.getVertexId());//adaugÄƒm in lista cu rezultatul final.
+            resultList.add(currentVertex.getVertexId());//adaugăm in lista cu rezultatul final.
             List<Edge> edges = map.get(currentVertex);//cream lista de muchii care corespunde unui anumit vertex.
             Collections.reverse(edges);
 
             for (Edge edge : edges) {
-                Vertex v = edge.toVertex;//gÄƒsim vertexul spre care merge muchia, vertex nevizitat
+                Vertex v = edge.toVertex;//găsim vertexul spre care merge muchia, vertex nevizitat
 
-                if (!listVisitedVertices.contains(v)) {//verificam lista, ca sa nu adaugÄƒm unul si acelaÈ™i vertex.
-                    orderVisitedVertices.push(v);//adaug un nou vecin (vertex) in lista.
-                    listVisitedVertices.add(v);//adaugÄƒm in lista vertex-urile vizitate.
+                if (!listVisitedVertices.contains(v)) {//verificam lista, ca sa nu adaugăm unul si același vertex.
+                    orderVisitedVertices.push(v);//adaug un nou vecin (vertex) in Stack.
+                    listVisitedVertices.add(v);//adaugăm in lista vertex-urile vizitate, in Set.
                 }
             }
         }
@@ -44,31 +42,31 @@ public class GraphAlgorithms {
         return resultList;
     }
 
-    public static List<String> breadthFirstSearch(Vertex startVertex,
-                                                  List<Vertex> vertexList,
-                                                  List<Edge> edgeList) {
+    public static List<String> breadthFirstSearch(Vertex startVertex, List<Vertex> vertexList, List<Edge> edgeList) {
         System.out.println("BFS started with: " + startVertex.getVertexId());
 
-        Map<Vertex, List<Edge>> map = buildAdjacencyMap(vertexList, edgeList);
+        Map<Vertex, List<Edge>> map = buildAdjacencyMap(vertexList, edgeList);//vertex-uri si listele de muchii
+        // ale fiecărui vertex.
 
-        Queue<Vertex> orderVisitedVertices = new LinkedList<>();
+        Queue<Vertex> orderVisitedVertices = new LinkedList<>();//Queue(fifo) - pentru lățime.
         orderVisitedVertices.add(startVertex);
 
-        Set<Vertex> listVisitedVertices = new HashSet<>();
+        Set<Vertex> listVisitedVertices = new HashSet<>();//Set - ajuta sa prevenim duplicatele.
         listVisitedVertices.add(startVertex);
 
-        List<String> resultList = new ArrayList<>();
+        List<String> resultList = new ArrayList<>();//adaugăm vertex-uri când sunt scoase din Queue.
 
         while (!orderVisitedVertices.isEmpty()) {
 
             Vertex currentVertex = orderVisitedVertices.poll();
             resultList.add(currentVertex.getVertexId());
-            List<Edge> edges = map.get(currentVertex);
+            List<Edge> edges = map.get(currentVertex);//cream lista de muchii care corespund unui anumit vertex.
+
             for (Edge edge : edges) {
-                Vertex v = edge.toVertex;
-                if (!listVisitedVertices.contains(v)) {
-                    orderVisitedVertices.add(v);
-                    listVisitedVertices.add(v);
+                Vertex v = edge.toVertex;//găsim vertex-ul spre care merge muchia, vertex nevizitat
+                if (!listVisitedVertices.contains(v)) {//verificam lista ca sa nu apară unul si același vertex
+                    orderVisitedVertices.add(v);//adaugăm un nou vecin (vertex) in Queue.
+                    listVisitedVertices.add(v);//adaugăm in lista vertex-urile vizitate, in Set.
                 }
             }
         }
@@ -104,28 +102,157 @@ public class GraphAlgorithms {
         return map;
     }
 
-    public static Map<Vertex, String> dijkstraAlgorithm(Vertex startVertex, List<Vertex> vertexList, List<Edge> edges) {
+    private static Map<Vertex, Integer> initializeDistances(List<Vertex> vertexList, Vertex startVertex) {
+        final int INFINITY_DISTANCE = Integer.MAX_VALUE;
 
-        Map<Vertex, List<Edge>> map = buildAdjacencyMap(vertexList, edges);
+        Map<Vertex, Integer> distances = new HashMap<>();
 
-
-        PriorityQueue<Vertex> distancePriorityQueue = new PriorityQueue<>();
-        return null;
+        for (Vertex vertex : vertexList) {
+            distances.put(vertex, INFINITY_DISTANCE);
+        }
+        distances.put(startVertex, 0);
+        return distances;
     }
 
-    private static class NodeDistance implements Comparable<NodeDistance> {
-        Vertex vertex;
-        int vertexDistance;
+    private static void processVertex(VertexDistance currentVertexDistance, Set<Vertex> unprocessedVertices,
+                                      Map<Vertex, Integer> distances, Map<Vertex, List<Edge>> adjacencyMap,
+                                      PriorityQueue<VertexDistance> priorityQueue) {
 
-        public NodeDistance(Vertex vertexId, int vertexDistance) {
-            this.vertex = vertexId;
-            this.vertexDistance = vertexDistance;
+        Vertex currentVertex = currentVertexDistance.vertex; //extract vertex
+
+        if (unprocessedVertices.contains(currentVertex)) {
+            unprocessedVertices.remove(currentVertex);
+
+            List<Edge> neighbors = adjacencyMap.get(currentVertex); //get the edges adjacent to the current vertex
+
+            for (Edge edge : neighbors) {
+                Vertex neighbour = edge.toVertex;
+                if (unprocessedVertices.contains(neighbour)) {
+                    int newDistance = distances.get(currentVertex) + edge.getEdgeWeight();
+
+                    if (newDistance < distances.get(neighbour)) {
+                        distances.put(neighbour, newDistance);
+                        priorityQueue.add(new VertexDistance(neighbour, newDistance));
+                    }
+                }
+            }
+        }
+    }
+
+    public static Map<Vertex, Integer> dijkstraAlgorithm(Vertex startVertex, List<Vertex> vertexList, List<Edge> edges) {
+
+        Map<Vertex, Integer> distances = initializeDistances(vertexList, startVertex);
+        Set<Vertex> unprocessedVertices = new HashSet<>(vertexList);
+        PriorityQueue<VertexDistance> distancePriorityQueue = new PriorityQueue<>();
+        Map<Vertex, List<Edge>> adjacencyMap = buildAdjacencyMap(vertexList, edges);
+
+        distancePriorityQueue.add(new VertexDistance(startVertex, 0));
+
+        while (!unprocessedVertices.isEmpty()) {
+
+            VertexDistance currentVertexDistance = distancePriorityQueue.poll(); //remove the nearest vertex
+
+            if (currentVertexDistance != null) { //if queue is empty
+                processVertex(currentVertexDistance,
+                        unprocessedVertices,
+                        distances,
+                        adjacencyMap,
+                        distancePriorityQueue);
+            }
+        }
+        return distances;
+    }
+
+    private static void processVertexPrim(VertexDistance currentVertexDistance,
+                                          Set<Vertex> unprocessedVertices,
+                                          Map<Vertex, Integer> distances,
+                                          Map<Vertex, List<Edge>> adjacencyMap,
+                                          PriorityQueue<VertexDistance> priorityQueue,
+                                          Map<Vertex, Vertex> parents/**/) {
+
+        Vertex currentVertex = currentVertexDistance.vertex; //extract vertex
+
+        if (unprocessedVertices.contains(currentVertex)) {
+            unprocessedVertices.remove(currentVertex);
+
+            List<Edge> neighbors = adjacencyMap.get(currentVertex); //get the edges adjacent to the current vertex
+
+            for (Edge edge : neighbors) {
+                Vertex neighbour = edge.toVertex;
+                if (unprocessedVertices.contains(neighbour)) {
+                    int newDistance = edge.getEdgeWeight();//
+
+                    if (newDistance < distances.get(neighbour)) {
+                        distances.put(neighbour, newDistance);
+                        priorityQueue.add(new VertexDistance(neighbour, newDistance));
+                        parents.put(neighbour, currentVertex);
+                    }
+                }
+            }
+        }
+    }
+
+    public static Map<String, String> primAlgorithm(Vertex startVertex,
+                                                    List<Vertex> vertexList,
+                                                    List<Edge> edges) {
+
+        Map<Vertex, Integer> distances = initializeDistances(vertexList, startVertex);
+        Map<Vertex, Vertex> parents = new HashMap<>();
+
+        Set<Vertex> unprocessedVertices = new HashSet<>(vertexList);
+        PriorityQueue<VertexDistance> distancePriorityQueue = new PriorityQueue<>();
+        Map<Vertex, List<Edge>> adjacencyMap = buildAdjacencyMap(vertexList, edges);
+
+        distancePriorityQueue.add(new VertexDistance(startVertex, 0));
+
+        while (!unprocessedVertices.isEmpty()) {
+
+            VertexDistance currentVertexDistance = distancePriorityQueue.poll(); //remove the nearest vertex
+
+            if (currentVertexDistance != null) { //if queue is empty
+                processVertexPrim(currentVertexDistance,
+                        unprocessedVertices,
+                        distances,
+                        adjacencyMap,
+                        distancePriorityQueue,
+                        parents);
+            }
+        }
+
+        Map<String, String> result = new HashMap<>();
+
+        for (Map.Entry<Vertex, Vertex> map : parents.entrySet()){
+            result.put(map.getKey().getVertexId(), map.getValue().getVertexId());
+        }
+
+        return result;
+    }
+
+    private static class VertexDistance implements Comparable<VertexDistance> {
+        Vertex vertex;
+        int distance;
+
+        public VertexDistance(Vertex vertex, int vertexDistance) {
+            this.vertex = vertex;
+            this.distance = vertexDistance;
         }
 
         @Override
-        public int compareTo(NodeDistance other) {
+        public int compareTo(VertexDistance other) {
 
-            return this.vertexDistance - other.vertexDistance;
+            return this.distance - other.distance;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) return false;
+            VertexDistance that = (VertexDistance) o;
+            return distance == that.distance && Objects.equals(vertex, that.vertex);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(vertex, distance);
         }
     }
 }
